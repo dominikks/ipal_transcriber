@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 import argparse
-import glob
 import gzip
 import json
 import logging
-import sys
 
 import transcriber.settings as settings
 
@@ -92,6 +90,7 @@ def combine(files, dataset, output):
         for line in f.readlines():
             js = json.loads(line)
             js["ids"] = False
+            js["alerts"] = {}
             js["metrics"] = {}
             ds[js["timestamp"]] = js
 
@@ -107,8 +106,13 @@ def combine(files, dataset, output):
                 js = json.loads(line)
                 assert js["timestamp"] in ds
 
-                ds[js["timestamp"]]["ids"] = ds[js["timestamp"]]["ids"] or js["ids"]
+                ids = ds[js["timestamp"]]["ids"]
+
+                ds[js["timestamp"]]["ids"] = ids or js["ids"]
                 ds[js["timestamp"]]["metrics"].update(js["metrics"])
+
+                for key in js["metrics"].keys():
+                    ds[js["timestamp"]]["alerts"].update({ key: ids })
 
     # Save combined dataset
     settings.logger.info("Saving combined dataset")
